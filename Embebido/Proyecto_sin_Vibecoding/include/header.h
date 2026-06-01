@@ -8,6 +8,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <freertos/timers.h>
+#include <freertos/queue.h>
 
 // ── Pines ─────────────────────────────────────────────────────────────────
 #define SPEAKER_PIN             0
@@ -18,7 +19,7 @@
 #define ACCELEROMETER_SDA       9
 
 // ── Tamaños de la FSM ─────────────────────────────────────────────────────
-#define MAX_TYPE_EVENTS         4
+#define MAX_TYPE_EVENTS         5
 #define TOTAL_EVENTOS           5
 #define TOTAL_ESTADOS           4
 
@@ -35,6 +36,25 @@
 #define UMBRAL_ADVERTENCIAS     3
 
 #define BITS_READ_RESOLUTION    12
+
+// ── MQTT ──────────────────────────────────────────────────────────────────
+#define MQTT_BROKER             "0.tcp.sa.ngrok.io"
+#define MQTT_PORT               29395
+#define MQTT_USER               "claromio"
+#define MQTT_PASS               "RiverBest"
+#define MQTT_CLIENT_ID          "ESP32AlarmClient"
+
+#define TOPIC_COMMAND           "alarm/command"
+#define TOPIC_STATE             "alarm/state"
+#define TOPIC_ACCEL             "alarm/accel"
+#define TOPIC_EVENT             "alarm/event"
+
+#define MQTT_QUEUE_SIZE         8
+
+struct MqttMessage {
+  char topic[32];
+  char payload[64];
+};
 
 // ── Tipos compartidos entre módulos ───────────────────────────────────────
 enum Estado {
@@ -77,5 +97,10 @@ extern TaskHandle_t      xAlarmaTask;
 
 extern int               contadorAdvertencias;
 extern bool              timerReiniciadoEnAdvertencia;
+
+extern QueueHandle_t             xMqttOutQueue;
+extern SemaphoreHandle_t         xMqttComandoPendienteMutex;
+extern volatile bool             mqttComandoPendiente;
+extern volatile Evento           mqttComandoPendienteTipo;
 
 #endif
