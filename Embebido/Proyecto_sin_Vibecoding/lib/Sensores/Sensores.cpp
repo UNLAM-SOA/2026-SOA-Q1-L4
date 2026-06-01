@@ -50,7 +50,7 @@ void cancelarTimeoutAdvertencia() {
 // ── Detección de eventos ──────────────────────────────────────────────────
 static bool detectaBotonEvent() {
   bool result = false;
-  if (xSemaphoreTake(xBotonEventoPendienteMutex, portMAX_DELAY) == pdTRUE) {
+  if (xSemaphoreTake(xBotonEventoPendienteMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
     if (botonEventoPendiente) {
       botonEventoPendiente = false;
       newEvent = (estadoActual == APAGADO) ? PRENDER : APAGAR;
@@ -87,16 +87,15 @@ static bool detectaMovimientoBrusco() {
   float diffZ = abs(currentZ - lastZ);
   bool condition = (diffX > UMBRAL_MOVIMIENTO || diffY > UMBRAL_MOVIMIENTO || diffZ > UMBRAL_MOVIMIENTO);
 
-  if (condition) {
-    Serial.println("Valor x"); Serial.println(currentX);
-    Serial.println("Valor y"); Serial.println(currentY);
-    Serial.println("Valor z"); Serial.println(currentZ);
-  }
+  Serial.print("MPU - X: "); Serial.print(currentX);
+  Serial.print(" | Y: "); Serial.print(currentY);
+  Serial.print(" | Z: "); Serial.println(currentZ);
 
   return condition;
 }
 static bool detectaMovimientoEvent() {
-  if ((estadoActual == ACTIVO || estadoActual == ADVERTENCIA_MOVIMIENTO) && detectaMovimientoBrusco()) {
+  bool movimiento = detectaMovimientoBrusco();
+  if ((estadoActual == ACTIVO || estadoActual == ADVERTENCIA_MOVIMIENTO) && movimiento) {
     newEvent = MOV_DETECTADO;
     return true;
   }
@@ -105,10 +104,9 @@ static bool detectaMovimientoEvent() {
 
 static bool detectaTouchEvent() {
   int hallActual = analogRead(PIN_HALL);
+  Serial.print("Hall: "); Serial.println(hallActual);
   bool trampaHall = abs(hallActual - hallBaseline) > UMBRAL_TOUCH;
   if ((estadoActual == ACTIVO || estadoActual == ADVERTENCIA_MOVIMIENTO) && trampaHall) {
-    Serial.println("Valor hall: ");
-    Serial.println(hallActual);
     newEvent = TOUCH_DETECTADO;
     return true;
   }
@@ -117,7 +115,7 @@ static bool detectaTouchEvent() {
 
 static bool detectaTimeoutAdvertencia() {
   bool result = false;
-  if (xSemaphoreTake(xTimeoutAdvertenciaPendienteMutex, portMAX_DELAY) == pdTRUE) {
+  if (xSemaphoreTake(xTimeoutAdvertenciaPendienteMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
     if (timeoutAdvertenciaPendiente) {
       timeoutAdvertenciaPendiente = false;
       newEvent = TIMEOUT_ADVERTENCIA;

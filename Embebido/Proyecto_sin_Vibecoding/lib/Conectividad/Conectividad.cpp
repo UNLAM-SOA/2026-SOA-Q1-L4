@@ -28,9 +28,12 @@ static void mqttCallback(char* topic, byte* payload, unsigned int length) {
 }
 
 static void tareaConectividad(void* pvParameters) {
+  Serial.println("[WiFi] Esperando conexion...");
   while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
     vTaskDelay(pdMS_TO_TICKS(500));
   }
+  Serial.println();
   Serial.print("WiFi conectado: ");
   Serial.println(WiFi.localIP());
 
