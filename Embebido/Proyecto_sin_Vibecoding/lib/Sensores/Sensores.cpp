@@ -61,26 +61,40 @@ static bool detectaBotonEvent() {
   return result;
 }
 
+static bool detectaMqttComandoEvent() {
+  bool result = false;
+  if (xSemaphoreTake(xMqttComandoPendienteMutex, 0) == pdTRUE) {
+    if (mqttComandoPendiente) {
+      mqttComandoPendiente = false;
+      newEvent = mqttComandoPendienteTipo;
+      result   = true;
+    }
+    xSemaphoreGive(xMqttComandoPendienteMutex);
+  }
+  return result;
+}
+
 static bool detectaMovimientoBrusco() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
-  float diffX = abs(a.acceleration.x - lastX);
-  float diffY = abs(a.acceleration.y - lastY);
-  float diffZ = abs(a.acceleration.z - lastZ);
+
+  currentX = a.acceleration.x;
+  currentY = a.acceleration.y;
+  currentZ = a.acceleration.z;
+
+  float diffX = abs(currentX - lastX);
+  float diffY = abs(currentY - lastY);
+  float diffZ = abs(currentZ - lastZ);
   bool condition = (diffX > UMBRAL_MOVIMIENTO || diffY > UMBRAL_MOVIMIENTO || diffZ > UMBRAL_MOVIMIENTO);
 
   if (condition) {
-    Serial.println("Valor x");
-    Serial.println(a.acceleration.x);
-    Serial.println("Valor y");
-    Serial.println(a.acceleration.y);
-    Serial.println("Valor z");
-    Serial.println(a.acceleration.z);
+    Serial.println("Valor x"); Serial.println(currentX);
+    Serial.println("Valor y"); Serial.println(currentY);
+    Serial.println("Valor z"); Serial.println(currentZ);
   }
 
   return condition;
 }
-
 static bool detectaMovimientoEvent() {
   if ((estadoActual == ACTIVO || estadoActual == ADVERTENCIA_MOVIMIENTO) && detectaMovimientoBrusco()) {
     newEvent = MOV_DETECTADO;
@@ -119,7 +133,8 @@ EventDetector eventType[MAX_TYPE_EVENTS] = {
   detectaBotonEvent,
   detectaMovimientoEvent,
   detectaTouchEvent,
-  detectaTimeoutAdvertencia
+  detectaTimeoutAdvertencia,
+  detectaMqttComandoEvent
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────
@@ -139,9 +154,10 @@ void initHardware() {
 }
 
 void initEventDetectors() {
-  xBotonSemaphore                  = xSemaphoreCreateBinary();
+  xBotonSemaphore                   = xSemaphoreCreateBinary();
   xBotonEventoPendienteMutex        = xSemaphoreCreateMutex();
   xTimeoutAdvertenciaPendienteMutex = xSemaphoreCreateMutex();
+  xMqttComandoPendienteMutex        = xSemaphoreCreateMutex();
 
   xTaskCreate(tareaBoton, "tareaBoton", TAM_PILA, nullptr, PRIORIDAD, nullptr);
   xTaskCreate(setearTimeoutAdvertencia, "setearTimeoutAdvertencia", TAM_PILA, nullptr, PRIORIDAD, &xTareaAdvertenciaHandle);

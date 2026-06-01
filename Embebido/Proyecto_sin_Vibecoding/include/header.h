@@ -103,4 +103,6 @@ extern SemaphoreHandle_t         xMqttComandoPendienteMutex;
 extern volatile bool             mqttComandoPendiente;
 extern volatile Evento           mqttComandoPendienteTipo;
 
+extern float                     currentX, currentY, currentZ;
+
 #endif

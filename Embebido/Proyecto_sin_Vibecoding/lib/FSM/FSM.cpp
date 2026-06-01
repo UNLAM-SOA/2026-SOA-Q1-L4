@@ -1,6 +1,7 @@
 #include "FSM.h"
 #include <Melodias.h>
 #include <Sensores.h>
+#include <Conectividad.h>
 
 // ── Acciones de la FSM ────────────────────────────────────────────────────
 static void guardaPosicion() {
@@ -15,6 +16,8 @@ static void prender() {
   Serial.println(">>> SISTEMA ARMADO");
   guardaPosicion();
   estadoActual = ACTIVO;
+  encolarMqtt(TOPIC_STATE, "ACTIVO");
+  encolarMqtt(TOPIC_EVENT, "ARMED");
 }
 
 static void advertirMovimiento() {
@@ -23,6 +26,8 @@ static void advertirMovimiento() {
   timerReiniciadoEnAdvertencia = false;
   digitalWrite(LED_PIN, HIGH);
   iniciarTimeoutAdvertencia();
+  encolarMqtt(TOPIC_EVENT, "MOVEMENT_DETECTED");
+  encolarMqtt(TOPIC_STATE, "ADVERTENCIA");
   estadoActual = ADVERTENCIA_MOVIMIENTO;
 }
 
@@ -36,6 +41,8 @@ static void alertar() {
   }
 
   estadoActual = ALERTA;
+  encolarMqtt(TOPIC_STATE, "ALERTA");
+  encolarMqtt(TOPIC_EVENT, "ALERT_TRIGGERED");
 }
 
 static void apagar() {
@@ -53,6 +60,8 @@ static void apagar() {
 
   digitalWrite(LED_PIN, LOW);
   estadoActual = APAGADO;
+  encolarMqtt(TOPIC_STATE, "APAGADO");
+  encolarMqtt(TOPIC_EVENT, "DISARMED");
 }
 
 static void manejarMovDuranteAdvertencia() {
@@ -90,6 +99,8 @@ static void reiniciarAdvertencia() {
   contadorAdvertencias = 0;
   digitalWrite(LED_PIN, LOW);
   estadoActual = ACTIVO;
+  encolarMqtt(TOPIC_STATE, "ACTIVO");
+  encolarMqtt(TOPIC_EVENT, "WARNING_CLEARED");
 }
 
 static void errorTransicion() {
