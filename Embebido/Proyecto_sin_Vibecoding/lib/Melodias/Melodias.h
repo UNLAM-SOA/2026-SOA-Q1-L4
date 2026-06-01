@@ -1,5 +1,5 @@
-#ifndef MELODIES_H
-#define MELODIES_H
+#ifndef MELODIAS_H
+#define MELODIAS_H
 
 #define NOTE_C4  262
 #define NOTE_D4  294
@@ -45,6 +45,7 @@ const int melodiaTetris[] = {
   NOTE_C5, 125, NOTE_B4, 125, NOTE_A4, 250, NOTE_A4, 125, NOTE_C5, 125, NOTE_E5, 250
 };
 
+// Tarea FreeRTOS: pvParameters debe ser (void*)(intptr_t)speakerPin
 void tareaReproducirMelodia(void* pvParameters);
 
 #endif
