@@ -10,7 +10,7 @@ Evento           newEvent;
 short            lastIndexTypeSensor = 0;
 Adafruit_MPU6050 mpu;
 float            lastX, lastY, lastZ;
-int              hallBaseline        = 0;
+int              hallBaseline        = 2500;
 QueueHandle_t             xMqttOutQueue                     = nullptr;
 SemaphoreHandle_t         xMqttComandoPendienteMutex        = nullptr;
 SemaphoreHandle_t         xBotonSemaphore                   = nullptr;
