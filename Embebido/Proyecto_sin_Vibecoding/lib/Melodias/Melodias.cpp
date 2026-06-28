@@ -1,22 +1,41 @@
 
 #include "Melodias.h"
+#include "header.h"
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-/////////////////////////////////////////////////////////////////////////////////////////
-//////////// Tarea para hacer que suene la melodia, una vez se active la alarma./////////
-/////////////////////////////////////////////////////////////////////////////////////////
+static const int* const catalogoMelodias[] = {
+  melodiaStarWars,
+  melodiaNokia,
+  melodiaMario,
+  melodiaTetris,
+};
+
+static const int catalogoTamanios[] = {
+  sizeof(melodiaStarWars) / sizeof(melodiaStarWars[0]),
+  sizeof(melodiaNokia)    / sizeof(melodiaNokia[0]),
+  sizeof(melodiaMario)    / sizeof(melodiaMario[0]),
+  sizeof(melodiaTetris)   / sizeof(melodiaTetris[0]),
+};
+
+static const uint8_t TOTAL_MELODIAS = sizeof(catalogoMelodias) / sizeof(catalogoMelodias[0]);
+
 void tareaReproducirMelodia(void* pvParameters) {
   int speakerPin = (int)(intptr_t)pvParameters;
 
-  // Aca se puede elegir qué ringtone queremos que suene (ej: melodiaStarWars, melodiaNokia, melodiaMario, melodiaTetris)
-  const int* melodiaActiva = melodiaTetris;
-  int numValores = sizeof(melodiaTetris) / sizeof(melodiaTetris[0]);
-
   while (1) {
+    uint8_t idx = 0;
+    if (xSemaphoreTake(xMelodiaSeleccionadaMutex, portMAX_DELAY) == pdTRUE) {
+      idx = melodiaSeleccionada < TOTAL_MELODIAS ? melodiaSeleccionada : 0;
+      xSemaphoreGive(xMelodiaSeleccionadaMutex);
+    }
+
+    const int* melodiaActiva = catalogoMelodias[idx];
+    int numValores = catalogoTamanios[idx];
+
     for (int i = 0; i < numValores; i += 2) {
-      int nota = melodiaActiva[i];
+      int nota     = melodiaActiva[i];
       int duracion = melodiaActiva[i + 1];
 
       if (nota == 0) {
@@ -25,11 +44,10 @@ void tareaReproducirMelodia(void* pvParameters) {
         tone(speakerPin, nota);
       }
 
-      // Cedemos el procesador mientras suena la nota
       vTaskDelay(pdMS_TO_TICKS(duracion));
       noTone(speakerPin);
       vTaskDelay(pdMS_TO_TICKS(50));
     }
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Pausa antes de repetir
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }

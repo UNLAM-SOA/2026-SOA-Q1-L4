@@ -1,4 +1,5 @@
 #include "header.h"
+#include <Preferences.h>
 #include <Melodias.h>
 #include <Sensores.h>
 #include <FSM.h>
@@ -18,6 +19,8 @@ SemaphoreHandle_t         xBotonEventoPendienteMutex        = nullptr;
 SemaphoreHandle_t         xTimeoutAdvertenciaPendienteMutex = nullptr;
 volatile Evento           mqttComandoPendienteTipo          = APAGAR;
 volatile bool             mqttComandoPendiente              = false;
+volatile uint8_t          melodiaSeleccionada               = 0;
+SemaphoreHandle_t         xMelodiaSeleccionadaMutex         = nullptr;
 volatile bool             botonEventoPendiente              = false;
 volatile bool             timeoutAdvertenciaPendiente       = false;
 TimerHandle_t             xTimerAdvertencia                 = nullptr;
@@ -28,11 +31,21 @@ bool                      timerReiniciadoEnAdvertencia      = false;
 float                     currentX                     = 0;
 float                     currentY                     = 0;
 float                     currentZ                     = 0;
+volatile float            umbralMovimiento             = 2.5f;
+SemaphoreHandle_t         xUmbralMovimientoMutex       = nullptr;
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
   analogReadResolution(BITS_READ_RESOLUTION);
   analogSetAttenuation(ADC_11db);
+  xMelodiaSeleccionadaMutex = xSemaphoreCreateMutex();
+  xUmbralMovimientoMutex = xSemaphoreCreateMutex();
+  {
+    Preferences prefs;
+    prefs.begin("alarm", true);
+    umbralMovimiento = prefs.getFloat("umbral", 2.5f);
+    prefs.end();
+  }
   initHardware();
   initEventDetectors();
   initConectividad();

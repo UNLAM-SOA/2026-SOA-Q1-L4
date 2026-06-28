@@ -85,7 +85,12 @@ static bool detectaMovimientoBrusco() {
   float diffX = abs(currentX - lastX);
   float diffY = abs(currentY - lastY);
   float diffZ = abs(currentZ - lastZ);
-  bool condition = (diffX > UMBRAL_MOVIMIENTO || diffY > UMBRAL_MOVIMIENTO || diffZ > UMBRAL_MOVIMIENTO);
+  float umbral = 2.5f;
+  if (xSemaphoreTake(xUmbralMovimientoMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+    umbral = umbralMovimiento;
+    xSemaphoreGive(xUmbralMovimientoMutex);
+  }
+  bool condition = (diffX > umbral || diffY > umbral || diffZ > umbral);
 
   Serial.print("MPU - X: "); Serial.print(currentX);
   Serial.print(" | Y: "); Serial.print(currentY);

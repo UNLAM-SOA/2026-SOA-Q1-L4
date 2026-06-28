@@ -11,12 +11,12 @@
 #include <freertos/queue.h>
 
 // ── Pines ─────────────────────────────────────────────────────────────────
-#define SPEAKER_PIN             0
-#define LED_PIN                 1
-#define PIN_HALL                3
-#define PIN_BUTTON              2
-#define ACCELEROMETER_SCL       8
-#define ACCELEROMETER_SDA       9
+#define SPEAKER_PIN             3
+#define LED_PIN                 2
+#define PIN_HALL                1
+#define PIN_BUTTON              10
+#define ACCELEROMETER_SCL       7
+#define ACCELEROMETER_SDA       6
 
 // ── Tamaños de la FSM ─────────────────────────────────────────────────────
 #define MAX_TYPE_EVENTS         5
@@ -29,7 +29,6 @@
 #define SERIAL_BAUD             115200
 
 // ── Umbrales ──────────────────────────────────────────────────────────────
-#define UMBRAL_MOVIMIENTO       2.5
 #define UMBRAL_TOUCH            500
 #define DEBOUNCE_MS             50
 #define TIMEOUT_ADVERTENCIA_MS  6000
@@ -39,7 +38,7 @@
 
 // ── MQTT ──────────────────────────────────────────────────────────────────
 #define MQTT_BROKER             "0.tcp.sa.ngrok.io"
-#define MQTT_PORT               29395
+#define MQTT_PORT               29379
 #define MQTT_USER               "claromio"
 #define MQTT_PASS               "RiverBest"
 #define MQTT_CLIENT_ID          "ESP32AlarmClient"
@@ -48,6 +47,8 @@
 #define TOPIC_STATE             "alarm/state"
 #define TOPIC_ACCEL             "alarm/accel"
 #define TOPIC_EVENT             "alarm/event"
+#define TOPIC_MELODY            "alarm/melody"
+#define TOPIC_SENSITIVITY       "alarm/sensitivity"
 
 #define MQTT_QUEUE_SIZE         8
 
@@ -102,6 +103,12 @@ extern QueueHandle_t             xMqttOutQueue;
 extern SemaphoreHandle_t         xMqttComandoPendienteMutex;
 extern volatile bool             mqttComandoPendiente;
 extern volatile Evento           mqttComandoPendienteTipo;
+
+extern volatile uint8_t          melodiaSeleccionada;
+extern SemaphoreHandle_t         xMelodiaSeleccionadaMutex;
+
+extern volatile float            umbralMovimiento;
+extern SemaphoreHandle_t         xUmbralMovimientoMutex;
 
 extern float                     currentX, currentY, currentZ;
 

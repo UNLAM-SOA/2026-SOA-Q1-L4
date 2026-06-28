@@ -1,10 +1,11 @@
 #include "Conectividad.h"
 #include "header.h"
+#include <Preferences.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-static const char* WIFI_SSID = "SO Avanzados";
-static const char* WIFI_PASS = "SOA.2019";
+static const char* WIFI_SSID = "aero";  // 2.4GHz — ESP32-C3 no soporta 5GHz
+static const char* WIFI_PASS = "12345678";
 
 static WiFiClient   espClient;
 static PubSubClient client(espClient);
@@ -13,17 +14,51 @@ static void mqttCallback(char* topic, byte* payload, unsigned int length) {
   char msg[16] = {0};
   memcpy(msg, payload, min((unsigned int)(sizeof(msg) - 1), length));
 
-  if (strcmp(topic, TOPIC_COMMAND) != 0) return;
+  if (strcmp(topic, TOPIC_COMMAND) == 0) {
+    Evento comando;
+    if      (strcmp(msg, "ARM")    == 0) comando = PRENDER;
+    else if (strcmp(msg, "DISARM") == 0) comando = APAGAR;
+    else return;
+    Serial.println();
+    Serial.print("Message: ");
+    Serial.print(msg);
+    if (xSemaphoreTake(xMqttComandoPendienteMutex, 0) == pdTRUE) {
+      mqttComandoPendiente     = true;
+      mqttComandoPendienteTipo = comando;
+      xSemaphoreGive(xMqttComandoPendienteMutex);
+    }
+    return;
+  }
 
-  Evento comando;
-  if      (strcmp(msg, "ARM")    == 0) comando = PRENDER;
-  else if (strcmp(msg, "DISARM") == 0) comando = APAGAR;
-  else return;
+  if (strcmp(topic, TOPIC_MELODY) == 0) {
+    uint8_t idx;
+    if      (strcmp(msg, "STARWARS") == 0) idx = 0;
+    else if (strcmp(msg, "NOKIA")    == 0) idx = 1;
+    else if (strcmp(msg, "MARIO")    == 0) idx = 2;
+    else if (strcmp(msg, "TETRIS")   == 0) idx = 3;
+    else return;
+    Serial.print("[MQTT] Melodia seleccionada: ");
+    Serial.println(msg);
+    if (xSemaphoreTake(xMelodiaSeleccionadaMutex, 0) == pdTRUE) {
+      melodiaSeleccionada = idx;
+      xSemaphoreGive(xMelodiaSeleccionadaMutex);
+    }
+    return;
+  }
 
-  if (xSemaphoreTake(xMqttComandoPendienteMutex, 0) == pdTRUE) {
-    mqttComandoPendiente     = true;
-    mqttComandoPendienteTipo = comando;
-    xSemaphoreGive(xMqttComandoPendienteMutex);
+  if (strcmp(topic, TOPIC_SENSITIVITY) == 0) {
+    float val = atof(msg);
+    if (val < 0.1f || val > 15.0f) return;
+    if (xSemaphoreTake(xUmbralMovimientoMutex, 0) == pdTRUE) {
+      umbralMovimiento = val;
+      xSemaphoreGive(xUmbralMovimientoMutex);
+    }
+    Preferences prefs;
+    prefs.begin("alarm", false);
+    prefs.putFloat("umbral", val);
+    prefs.end();
+    Serial.print("[MQTT] Umbral movimiento: ");
+    Serial.println(val);
   }
 }
 
@@ -52,6 +87,8 @@ static void tareaConectividad(void* pvParameters) {
       if (client.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS)) {
         Serial.println(" conectado");
         client.subscribe(TOPIC_COMMAND);
+        client.subscribe(TOPIC_MELODY);
+        client.subscribe(TOPIC_SENSITIVITY);
         encolarMqtt(TOPIC_STATE, "APAGADO");
       } else {
         Serial.print(" fallo rc=");
