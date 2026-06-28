@@ -68,12 +68,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "ajuste") {
+    NavHost(navController = navController, startDestination = "splash") {
+        composable("splash") { PantallaSplash(navController) }
         composable("ajuste") {
             PantallaAjuste(navController = navController)
         }
         composable("info") {
             PantallaInfo(navController = navController)
+        }
+        composable("notif"){
+            PantallaNotificaciones(navController = navController)
         }
     }
 }
@@ -148,6 +152,109 @@ fun PantallaAjuste(navController: NavController? = null) {
         }
     }
 }
+
+
+@Composable
+fun PantallaSplash(navController: NavController) {
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(2000)
+        navController.navigate("ajuste") {
+            popUpTo("splash") { inclusive = true }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(id = R.drawable.logo_mochila),
+                contentDescription = "Logo de la mochila",
+                modifier = Modifier.size(180.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Mochila Antirrobo",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
+    }
+}
+
+
+@Composable
+fun PantallaNotificaciones(navController: NavController? = null) {
+    // Datos de prueba: después los reemplazás con lo que venga de la BBDD
+    val notificaciones = listOf(
+        Notificacion("2026-06-05 21:30", "Sensor activado en la mochila"),
+        Notificacion("2026-06-05 20:15", "Sensibilidad ajustada a 80"),
+        Notificacion("2026-06-04 18:00", "Shake detectado")
+    )
+
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            Text(
+                text = "Registro de Notificaciones",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            // Lista de notificaciones
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(notificaciones) { notif ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = notif.fechaHora,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = notif.descripcion,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { navController?.popBackStack() },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Volver")
+            }
+        }
+    }
+}
+
+// Modelo simple para la notificación
+data class Notificacion(
+    val fechaHora: String,
+    val descripcion: String
+)
+
 
 // Esta es una pantalla de ejemplo para ver como navegar desde una pantalla a otra
 // Después se puede borrar
