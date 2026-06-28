@@ -162,9 +162,11 @@ fun PantallaAjuste(navController: NavController? = null) {
 
             OutlinedButton(onClick = { navController?.navigate("notif") }) {
                 Text("Ver historial de alertas")
-                Button(onClick = { navController?.navigate("melodias") }) {
-                    Text("Configurar Melodías de Alarma")
-                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = { navController?.navigate("melodias") }) {
+                Text("Configurar Melodías de Alarma")
             }
         }
     }
