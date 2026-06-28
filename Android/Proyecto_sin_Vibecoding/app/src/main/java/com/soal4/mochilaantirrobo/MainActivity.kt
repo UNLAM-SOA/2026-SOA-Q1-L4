@@ -23,7 +23,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.soal4.mochilaantirrobo.sensors.ShakeDetector
+import com.soal4.mochilaantirrobo.service.AlertaAcel
 import com.soal4.mochilaantirrobo.service.MqttNotifierService
+import com.soal4.mochilaantirrobo.service.NotificacionesService
 import com.soal4.mochilaantirrobo.ui.theme.MochilaAntirroboTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
 
         // TODO que no corra en una corutina
         MqttNotifierService.conectar()
+        MqttNotifierService.suscribirAlertas()
 
         enableEdgeToEdge()
         setContent {
@@ -72,13 +75,25 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val mensaje by MqttNotifierService.mensajeEntrante.collectAsState()
+
+    if (mensaje != null) {
+        AlertDialog(
+            onDismissRequest = { MqttNotifierService.limpiarMensaje() },
+            title = { Text("Estado de la mochila") },
+            text = { Text(mensaje!!) },
+            confirmButton = {
+                Button(onClick = { MqttNotifierService.limpiarMensaje() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") { PantallaSplash(navController) }
         composable("ajuste") {
             PantallaAjuste(navController = navController)
-        }
-        composable("info") {
-            PantallaInfo(navController = navController)
         }
         composable("notif") {
             PantallaNotificaciones(navController = navController)
@@ -154,12 +169,6 @@ fun PantallaAjuste(navController: NavController? = null) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Con navigate le indicas que vaya a esa otra pantalla
-            OutlinedButton(onClick = { navController?.navigate("info") }) {
-                Text("Ir a pantalla info")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
             OutlinedButton(onClick = { navController?.navigate("notif") }) {
                 Text("Ver historial de alertas")
             }
@@ -204,12 +213,15 @@ fun PantallaSplash(navController: NavController) {
 
 @Composable
 fun PantallaNotificaciones(navController: NavController? = null) {
-    // Datos de prueba: después los reemplazás con lo que venga de la BBDD
-    val notificaciones = listOf(
-        Notificacion("2026-06-05 21:30", "Sensor activado en la mochila"),
-        Notificacion("2026-06-05 20:15", "Sensibilidad ajustada a 80"),
-        Notificacion("2026-06-04 18:00", "Shake detectado")
-    )
+    var alertas by remember { mutableStateOf<List<AlertaAcel>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        try {
+            alertas = NotificacionesService.api.getNotificaciones()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     Scaffold { padding ->
         Column(
@@ -223,13 +235,12 @@ fun PantallaNotificaciones(navController: NavController? = null) {
                 modifier = Modifier.padding(16.dp)
             )
 
-            // Lista de notificaciones
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(notificaciones) { notif ->
+                items(alertas) { alerta ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -241,11 +252,13 @@ fun PantallaNotificaciones(navController: NavController? = null) {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = notif.fechaHora, style = MaterialTheme.typography.bodyMedium
+                                text = alerta.time.take(19).replace('T', ' '),
+                                style = MaterialTheme.typography.bodyMedium
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = notif.descripcion, style = MaterialTheme.typography.bodyLarge
+                                text = "X:${"%.1f".format(alerta.x)} Y:${"%.1f".format(alerta.y)} Z:${"%.1f".format(alerta.z)}",
+                                style = MaterialTheme.typography.bodyLarge
                             )
                         }
                     }
@@ -258,36 +271,6 @@ fun PantallaNotificaciones(navController: NavController? = null) {
                 onClick = { navController?.popBackStack() },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Volver")
-            }
-        }
-    }
-}
-
-// Modelo simple para la notificación
-data class Notificacion(val fechaHora: String, val descripcion: String)
-
-
-// Esta es una pantalla de ejemplo para ver como navegar desde una pantalla a otra
-// Después se puede borrar
-@Preview
-@Composable
-fun PantallaInfo(navController: NavController? = null) {
-    Scaffold { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Proyecto SOA grupo 4", style = MaterialTheme.typography.headlineMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Hola! Soy un ejemplo.")
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = { navController?.popBackStack() }) {
                 Text("Volver")
             }
         }

@@ -1,6 +1,9 @@
 package com.soal4.mochilaantirrobo.service
 
 import android.util.Log
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttException
@@ -14,13 +17,17 @@ object MqttNotifierService {
     private lateinit var mqttClient: MqttClient
 
     // TODO Actualizar
-    private const val BROKER_URL = "tcp://0.tcp.sa.ngrok.io:29379"
+    private const val BROKER_URL = "tcp://192.168.0.250:1883"
     private const val CLIENT_ID = "MochilaAndroidClient"
 
     private const val TOPIC_SHAKE = "alarm/arm_dsrm"
     private const val TOPIC_SENSIBILIDAD = "alarm/acelerometer_sens"
 
     private const val TOPIC_RINGTONE = "alarm/ringtone_id"
+    private const val TOPIC_ALERTAS = "alarm/state" // TODO: actualizar tópico
+
+
+    val mensajeEntrante = MutableStateFlow<String?>(null)
 
     fun conectar() {
 
@@ -31,8 +38,8 @@ object MqttNotifierService {
                 val options = MqttConnectOptions().apply {
                     isAutomaticReconnect = true
                     isCleanSession = false
-                    userName = " "
-                    password = " ".toCharArray()
+                    userName = "claromio"
+                    password = "RiverBest".toCharArray()
                 }
 
                 mqttClient.connect(options)
@@ -114,4 +121,23 @@ object MqttNotifierService {
                 )
             }
         }
+
+    fun suscribirAlertas() {
+        mqttClient.setCallback(object : MqttCallback {
+            override fun messageArrived(topic: String, message: MqttMessage) {
+                mensajeEntrante.value = message.toString()
+            }
+            override fun connectionLost(cause: Throwable?) {}
+            override fun deliveryComplete(token: IMqttDeliveryToken?) {}
+        })
+        try {
+            mqttClient.subscribe(TOPIC_ALERTAS, 1)
+        } catch (e: MqttException) {
+            Log.e("MQTT", "Error al suscribirse: ${e.message}")
+        }
+    }
+
+    fun limpiarMensaje() {
+        mensajeEntrante.value = null
+    }
 }
