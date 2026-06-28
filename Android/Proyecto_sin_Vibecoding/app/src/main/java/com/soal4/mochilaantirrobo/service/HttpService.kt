@@ -1,34 +1,29 @@
 package com.soal4.mochilaantirrobo.service
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.android.Android
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
-import io.ktor.serialization.kotlinx.json.json
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
+
+data class AlertaAcel(
+    val time: String,
+    val x: Double,
+    val y: Double,
+    val z: Double
+)
+
+interface NotificacionesApi {
+    @GET("accel")
+    suspend fun getNotificaciones(): List<AlertaAcel>
+}
 
 object HttpService {
+    private const val BASE_URL = "http://192.168.0.250:1880/" // TODO: actualizar URL
 
-    private val client = HttpClient(Android) {
-        install(ContentNegotiation) {
-            json()
-        }
+    val api: NotificacionesApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NotificacionesApi::class.java)
     }
-
-    private const val BASE_URL = "http://192.168.01.01:8080" // TODO Actualizar
-
-    suspend fun get(endpoint: String): HttpResponse =
-        client.get("$BASE_URL/$endpoint")
-
-    suspend fun post(endpoint: String, body: Any): HttpResponse =
-        client.post("$BASE_URL/$endpoint") {
-            contentType(ContentType.Application.Json)
-            setBody(body)
-        }
-
-    fun cerrar() = client.close()
 }

@@ -6,7 +6,6 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import kotlin.math.sqrt
 
-// La lógica del sensor está acá, pero se registra usando SensorManager, SensorEventListener y Sensor
 class ShakeDetector(
     private val sensorManager: SensorManager,
     private val umbralFuerzaShake: Int = 40,

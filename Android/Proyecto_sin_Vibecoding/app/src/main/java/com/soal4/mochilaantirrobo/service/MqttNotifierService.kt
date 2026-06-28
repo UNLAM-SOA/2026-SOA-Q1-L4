@@ -24,7 +24,7 @@ object MqttNotifierService {
     private const val TOPIC_SENSIBILIDAD = "alarm/acelerometer_sens"
 
     private const val TOPIC_RINGTONE = "alarm/ringtone_id"
-    private const val TOPIC_ALERTAS = "alarm/state" // TODO: actualizar tópico
+    private const val TOPIC_ALERTAS = "alarm/state"
 
 
     val mensajeEntrante = MutableStateFlow<String?>(null)
