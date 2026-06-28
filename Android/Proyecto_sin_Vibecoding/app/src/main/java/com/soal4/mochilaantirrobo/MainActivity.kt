@@ -80,11 +80,15 @@ fun AppNavigation() {
         composable("info") {
             PantallaInfo(navController = navController)
         }
-        composable("notif"){
+        composable("notif") {
             PantallaNotificaciones(navController = navController)
+        }
+        composable("melodias") {
+            PantallaMelodias(navController = navController)
         }
     }
 }
+
 
 // Las pantallas acá se definen así, no con un nuevo activity.
 // Se definene con @composable
@@ -102,8 +106,7 @@ fun PantallaAjuste(navController: NavController? = null) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
+        snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -116,17 +119,19 @@ fun PantallaAjuste(navController: NavController? = null) {
 
             Switch(
 
-                checked = isChecked,
-                onCheckedChange = { isChecked = it
+                checked = isChecked, onCheckedChange = {
+                    isChecked = it
                     scope.launch {
                         println("Enviando prendido/apagado via MQTT")
                         val respuesta = MqttNotifierService.enviarArmDsrm()
                         println("Respuesta: $respuesta")
                     }
-                }
-            )
+                })
 
-            Text("Nivel de Sensibilidad: ${valorSlider.toInt()}", modifier = Modifier.padding(top = 30.dp))
+            Text(
+                "Nivel de Sensibilidad: ${valorSlider.toInt()}",
+                modifier = Modifier.padding(top = 30.dp)
+            )
 
             Slider(
                 enabled = isChecked,
@@ -153,9 +158,15 @@ fun PantallaAjuste(navController: NavController? = null) {
             OutlinedButton(onClick = { navController?.navigate("info") }) {
                 Text("Ir a pantalla info")
             }
+            Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedButton(onClick = { navController?.navigate("notif") }) {
                 Text("Ver historial de alertas")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = { navController?.navigate("melodias") }) {
+                Text("Configurar Melodías de Alarma")
             }
         }
     }
@@ -174,8 +185,7 @@ fun PantallaSplash(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
+            .padding(32.dp), contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
@@ -185,8 +195,7 @@ fun PantallaSplash(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Mochila Antirrobo",
-                style = MaterialTheme.typography.headlineMedium
+                text = "Mochila Antirrobo", style = MaterialTheme.typography.headlineMedium
             )
         }
     }
@@ -232,13 +241,11 @@ fun PantallaNotificaciones(navController: NavController? = null) {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = notif.fechaHora,
-                                style = MaterialTheme.typography.bodyMedium
+                                text = notif.fechaHora, style = MaterialTheme.typography.bodyMedium
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = notif.descripcion,
-                                style = MaterialTheme.typography.bodyLarge
+                                text = notif.descripcion, style = MaterialTheme.typography.bodyLarge
                             )
                         }
                     }
@@ -258,10 +265,7 @@ fun PantallaNotificaciones(navController: NavController? = null) {
 }
 
 // Modelo simple para la notificación
-data class Notificacion(
-    val fechaHora: String,
-    val descripcion: String
-)
+data class Notificacion(val fechaHora: String, val descripcion: String)
 
 
 // Esta es una pantalla de ejemplo para ver como navegar desde una pantalla a otra
@@ -278,14 +282,76 @@ fun PantallaInfo(navController: NavController? = null) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Proyecto SOA grupo 4",
-                style = MaterialTheme.typography.headlineMedium
+                text = "Proyecto SOA grupo 4", style = MaterialTheme.typography.headlineMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text("Hola! Soy un ejemplo.")
             Spacer(modifier = Modifier.height(24.dp))
             Button(onClick = { navController?.popBackStack() }) {
                 Text("Volver")
+            }
+        }
+    }
+}
+
+@Composable
+fun PantallaMelodias(navController: NavController? = null) {
+    val listaMelodias = remember {
+        listOf(
+            Pair("1", "Star Wars - Marcha Imperial"),
+            Pair("2", "Nokia Clásico"),
+            Pair("3", "Super Mario Bros (1-Up)"),
+            Pair("4", "Tetris Theme")
+        )
+    }
+    var idSeleccionado by remember { mutableStateOf("1") }
+    val scope = rememberCoroutineScope()
+
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "Seleccioná la melodía para la mochila",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                listaMelodias.forEach { melodia ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        RadioButton(
+                            selected = (idSeleccionado == melodia.first),
+                            onClick = { idSeleccionado = melodia.first })
+                        Text(text = melodia.second, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        println("Enviando melodía ID $idSeleccionado via MQTT")
+
+                        // LLAMADA CORREGIDA: Apunta a la nueva función dedicada
+                        val respuesta = MqttNotifierService.enviarRingtone(idSeleccionado.toInt())
+
+                        println(respuesta) // Esto te va a imprimir el éxito o falla en consola
+                    }
+                    navController?.popBackStack() // Vuelve a la pantalla del Slider
+                }, modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Sincronizar Melodía")
             }
         }
     }

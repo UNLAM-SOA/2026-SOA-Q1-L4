@@ -20,6 +20,8 @@ object MqttNotifierService {
     private const val TOPIC_SHAKE = "alarm/arm_dsrm"
     private const val TOPIC_SENSIBILIDAD = "alarm/acelerometer_sens"
 
+    private const val TOPIC_RINGTONE = "alarm/ringtone_id"
+
     fun conectar() {
 
             try {
@@ -87,6 +89,28 @@ object MqttNotifierService {
 
                 continuation.resume(
                     "MQTT Error: ${e.message}"
+                )
+            }
+        }
+    suspend fun enviarRingtone(idMelodia: Int): String =
+        suspendCoroutine { continuation ->
+
+            val topic = TOPIC_RINGTONE
+            val payload = idMelodia.toString() // Convierte el 1, 2, 3 o 4 a Texto
+
+            val message = MqttMessage(payload.toByteArray()).apply {
+                qos = 1
+            }
+
+            try {
+                mqttClient.publish(topic, message)
+
+                continuation.resume(
+                    "MQTT: Melodía $idMelodia sincronizada con éxito"
+                )
+            } catch (e: MqttException) {
+                continuation.resume(
+                    "MQTT Error al cambiar melodía: ${e.message}"
                 )
             }
         }
