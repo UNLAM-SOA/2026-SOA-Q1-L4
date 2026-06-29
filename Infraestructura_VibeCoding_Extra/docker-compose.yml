@@ -1,0 +1,89 @@
+name: alarma_stack
+
+# -----------------------------------------------------------------------------
+# Stack local del proyecto IoT Antirrobos.
+#
+#   Servicios base (siempre):   mosquitto (broker MQTT) + nodered (logica + DB)
+#   Perfil "telemetria":        influxdb + telegraf  (series de tiempo, opcional)
+#
+# Uso:
+#   docker compose up -d                       -> levanta lo esencial
+#   docker compose --profile telemetria up -d  -> agrega InfluxDB + Telegraf
+# -----------------------------------------------------------------------------
+
+services:
+
+  mosquitto:
+    container_name: mosquitto_broker
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/config/passwd:/mosquitto/config/passwd:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    networks:
+      - alarma_network
+
+  nodered:
+    container_name: node_red
+    build: ./nodered
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./nodered/data:/data
+    depends_on:
+      - mosquitto
+    networks:
+      - alarma_network
+
+  influxdb:
+    container_name: influxdb
+    image: influxdb:2.7
+    profiles: ["telemetria"]
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminadmin
+      - DOCKER_INFLUXDB_INIT_ORG=default
+      - DOCKER_INFLUXDB_INIT_BUCKET=sensores_db
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=token-admin-soa-2026
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - alarma_network
+
+  telegraf:
+    container_name: telegraf_agent
+    image: telegraf:1.31
+    profiles: ["telemetria"]
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+      - mosquitto
+    environment:
+      - INFLUX_TOKEN=token-admin-soa-2026
+      - INFLUX_ORG=default
+      - INFLUX_BUCKET=sensores_db
+      - MQTT_USER=claromio
+      - MQTT_PASS=RiverBest
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    networks:
+      - alarma_network
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+  influxdb_data:
+
+networks:
+  alarma_network:
+    name: alarma_network

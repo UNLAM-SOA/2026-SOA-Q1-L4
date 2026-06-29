@@ -1,0 +1,6 @@
+{
+    "broker_mosq": {
+        "user": "claromio",
+        "password": "RiverBest"
+    }
+}

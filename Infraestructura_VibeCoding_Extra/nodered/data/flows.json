@@ -1,0 +1,524 @@
+[
+  {
+    "id": "tab_alarma",
+    "type": "tab",
+    "label": "Alarma Antirrobos",
+    "disabled": false,
+    "info": "Bridge MQTT + historial de activaciones (SQLite) + panel web."
+  },
+  {
+    "id": "broker_mosq",
+    "type": "mqtt-broker",
+    "name": "Mosquitto local",
+    "broker": "mosquitto",
+    "port": "1883",
+    "clientid": "node-red",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": 4,
+    "keepalive": 60,
+    "cleansession": true,
+    "credentials": {}
+  },
+  {
+    "id": "cfg_sqlite",
+    "type": "sqlitedb",
+    "db": "/data/historial.db",
+    "mode": "RWC",
+    "name": "historial"
+  },
+  {
+    "id": "inject_init",
+    "type": "inject",
+    "z": "tab_alarma",
+    "name": "Crear tabla al iniciar",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "1",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 160,
+    "y": 80,
+    "wires": [
+      [
+        "fn_crear"
+      ]
+    ]
+  },
+  {
+    "id": "fn_crear",
+    "type": "function",
+    "z": "tab_alarma",
+    "name": "SQL crear tabla",
+    "func": "// Crea la tabla de historial si no existe (se ejecuta al desplegar el flujo)\nmsg.topic = `CREATE TABLE IF NOT EXISTS activaciones (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  ts TEXT DEFAULT (datetime('now','localtime')),\n  tipo TEXT,\n  estado TEXT,\n  modo TEXT,\n  detalle TEXT,\n  origen TEXT\n)`;\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 80,
+    "wires": [
+      [
+        "sql_crear"
+      ]
+    ]
+  },
+  {
+    "id": "sql_crear",
+    "type": "sqlite",
+    "z": "tab_alarma",
+    "mydb": "cfg_sqlite",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "crear tabla",
+    "x": 640,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "in_estado",
+    "type": "mqtt in",
+    "z": "tab_alarma",
+    "name": "alarma/estado",
+    "topic": "alarma/estado",
+    "qos": "0",
+    "datatype": "auto-detect",
+    "broker": "broker_mosq",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 180,
+    "wires": [
+      [
+        "fn_estado",
+        "dbg_estado"
+      ]
+    ]
+  },
+  {
+    "id": "fn_estado",
+    "type": "function",
+    "z": "tab_alarma",
+    "name": "Estado -> SQL",
+    "func": "const q = s => String(s===undefined||s===null?'':s).replace(/'/g,\"''\");\nlet p = msg.payload; if (typeof p === 'string') { try { p = JSON.parse(p); } catch(e){ p={estado:p}; } }\nconst estado = p.estado || '';\nconst modo = p.modo || '';\n// Guardar ultimo estado en contexto para el panel web\nflow.set('ultimoEstado', {estado, modo, ts: new Date().toISOString()});\nmsg.topic = `INSERT INTO activaciones (tipo,estado,modo,detalle,origen) VALUES ('estado','${q(estado)}','${q(modo)}','','esp32')`;\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 180,
+    "wires": [
+      [
+        "sql_estado"
+      ]
+    ]
+  },
+  {
+    "id": "sql_estado",
+    "type": "sqlite",
+    "z": "tab_alarma",
+    "mydb": "cfg_sqlite",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "insert estado",
+    "x": 640,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "dbg_estado",
+    "type": "debug",
+    "z": "tab_alarma",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 400,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "in_evento",
+    "type": "mqtt in",
+    "z": "tab_alarma",
+    "name": "alarma/evento",
+    "topic": "alarma/evento",
+    "qos": "0",
+    "datatype": "auto-detect",
+    "broker": "broker_mosq",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 260,
+    "wires": [
+      [
+        "fn_evento"
+      ]
+    ]
+  },
+  {
+    "id": "fn_evento",
+    "type": "function",
+    "z": "tab_alarma",
+    "name": "Evento -> SQL",
+    "func": "const q = s => String(s===undefined||s===null?'':s).replace(/'/g,\"''\");\nlet p = msg.payload; if (typeof p === 'string') { try { p = JSON.parse(p); } catch(e){ p={evento:p}; } }\nconst ev = p.evento || '';\nconst det = p.detalle || '';\nmsg.topic = `INSERT INTO activaciones (tipo,estado,modo,detalle,origen) VALUES ('evento','','','${q(ev)}: ${q(det)}','esp32')`;\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 260,
+    "wires": [
+      [
+        "sql_evento"
+      ]
+    ]
+  },
+  {
+    "id": "sql_evento",
+    "type": "sqlite",
+    "z": "tab_alarma",
+    "mydb": "cfg_sqlite",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "insert evento",
+    "x": 640,
+    "y": 260,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "in_acel",
+    "type": "mqtt in",
+    "z": "tab_alarma",
+    "name": "alarma/acel",
+    "topic": "alarma/acel",
+    "qos": "0",
+    "datatype": "auto-detect",
+    "broker": "broker_mosq",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 340,
+    "wires": [
+      [
+        "fn_acel"
+      ]
+    ]
+  },
+  {
+    "id": "fn_acel",
+    "type": "function",
+    "z": "tab_alarma",
+    "name": "Acel -> contexto",
+    "func": "let p = msg.payload; if (typeof p === 'string') { try { p = JSON.parse(p); } catch(e){ p={}; } }\nflow.set('ultimaAcel', {magnitud: p.magnitud, ts: new Date().toISOString()});\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 340,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "in_comando",
+    "type": "mqtt in",
+    "z": "tab_alarma",
+    "name": "alarma/comando",
+    "topic": "alarma/comando",
+    "qos": "0",
+    "datatype": "auto-detect",
+    "broker": "broker_mosq",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 420,
+    "wires": [
+      [
+        "dbg_comando"
+      ]
+    ]
+  },
+  {
+    "id": "dbg_comando",
+    "type": "debug",
+    "z": "tab_alarma",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 400,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "http_cmd",
+    "type": "http in",
+    "z": "tab_alarma",
+    "name": "",
+    "url": "/alarma/comando",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 520,
+    "wires": [
+      [
+        "fn_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "fn_cmd",
+    "type": "function",
+    "z": "tab_alarma",
+    "name": "Comando -> MQTT",
+    "func": "const cmd = (msg.req.query.cmd || '').toUpperCase();\nconst validos = ['ARM','DISARM','PANIC'];\nif (!validos.includes(cmd)) { msg.statusCode = 400; msg.payload = {ok:false, error:'cmd invalido'}; return [null, msg]; }\n// Mensaje a publicar por MQTT\nconst out = { topic: 'alarma/comando', payload: cmd };\nconst resp = { statusCode: 200, payload: {ok:true, cmd} };\nreturn [out, resp];",
+    "outputs": 2,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 520,
+    "wires": [
+      [
+        "out_comando"
+      ],
+      [
+        "resp_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "out_comando",
+    "type": "mqtt out",
+    "z": "tab_alarma",
+    "name": "alarma/comando",
+    "topic": "alarma/comando",
+    "qos": "0",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "broker_mosq",
+    "x": 640,
+    "y": 500,
+    "wires": []
+  },
+  {
+    "id": "resp_cmd",
+    "type": "http response",
+    "z": "tab_alarma",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 640,
+    "y": 560,
+    "wires": []
+  },
+  {
+    "id": "http_estado",
+    "type": "http in",
+    "z": "tab_alarma",
+    "name": "",
+    "url": "/alarma/estado",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 620,
+    "wires": [
+      [
+        "fn_estado_get"
+      ]
+    ]
+  },
+  {
+    "id": "fn_estado_get",
+    "type": "function",
+    "z": "tab_alarma",
+    "name": "Estado actual",
+    "func": "msg.payload = { estado: flow.get('ultimoEstado') || {estado:'(sin datos)',modo:''},\n                acel: flow.get('ultimaAcel') || {magnitud:0} };\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 620,
+    "wires": [
+      [
+        "resp_estado"
+      ]
+    ]
+  },
+  {
+    "id": "resp_estado",
+    "type": "http response",
+    "z": "tab_alarma",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 640,
+    "y": 620,
+    "wires": []
+  },
+  {
+    "id": "http_hist",
+    "type": "http in",
+    "z": "tab_alarma",
+    "name": "",
+    "url": "/alarma/historial",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 700,
+    "wires": [
+      [
+        "fn_hist"
+      ]
+    ]
+  },
+  {
+    "id": "fn_hist",
+    "type": "function",
+    "z": "tab_alarma",
+    "name": "SQL historial",
+    "func": "msg.topic = 'SELECT id, ts, tipo, estado, modo, detalle FROM activaciones ORDER BY id DESC LIMIT 100'; return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 700,
+    "wires": [
+      [
+        "sql_hist"
+      ]
+    ]
+  },
+  {
+    "id": "sql_hist",
+    "type": "sqlite",
+    "z": "tab_alarma",
+    "mydb": "cfg_sqlite",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "select historial",
+    "x": 620,
+    "y": 700,
+    "wires": [
+      [
+        "resp_hist"
+      ]
+    ]
+  },
+  {
+    "id": "resp_hist",
+    "type": "http response",
+    "z": "tab_alarma",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 800,
+    "y": 700,
+    "wires": []
+  },
+  {
+    "id": "http_panel",
+    "type": "http in",
+    "z": "tab_alarma",
+    "name": "",
+    "url": "/alarma",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 800,
+    "wires": [
+      [
+        "tmpl_panel"
+      ]
+    ]
+  },
+  {
+    "id": "tmpl_panel",
+    "type": "template",
+    "z": "tab_alarma",
+    "name": "panel HTML",
+    "field": "payload",
+    "fieldType": "msg",
+    "format": "handlebars",
+    "syntax": "plain",
+    "template": "<!DOCTYPE html>\n<html lang=\\\"es\\\"><head><meta charset=\\\"utf-8\\\"><meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1\\\">\n<title>Alarma Antirrobos</title>\n<style>\n body{font-family:system-ui,Arial,sans-serif;margin:0;background:#0f172a;color:#e2e8f0}\n .wrap{max-width:760px;margin:0 auto;padding:20px}\n h1{font-size:1.4rem} .estado{font-size:2rem;font-weight:700;padding:16px;border-radius:12px;text-align:center;margin:12px 0}\n .APAGADO{background:#334155} .ACTIVO{background:#15803d} .ADVERTENCIA{background:#b45309} .ALERTADO{background:#b91c1c;animation:p .8s infinite}\n @keyframes p{50%{opacity:.5}}\n button{font-size:1rem;padding:10px 16px;margin:4px;border:0;border-radius:8px;cursor:pointer;color:#fff}\n .arm{background:#15803d}.dis{background:#475569}.pan{background:#b91c1c}\n table{width:100%;border-collapse:collapse;margin-top:14px;font-size:.85rem}\n th,td{border-bottom:1px solid #334155;padding:6px;text-align:left}\n .muted{color:#94a3b8;font-size:.85rem}\n</style></head>\n<body><div class=\\\"wrap\\\">\n<h1>Dispositivo IoT Antirrobos &mdash; Panel local</h1>\n<div id=\\\"estado\\\" class=\\\"estado APAGADO\\\">--</div>\n<div class=\\\"muted\\\">Magnitud acel.: <span id=\\\"acel\\\">-</span> m/s&sup2;</div>\n<div style=\\\"margin:14px 0\\\">\n <button class=\\\"arm\\\" onclick=\\\"cmd('ARM')\\\">ARMAR</button>\n <button class=\\\"dis\\\" onclick=\\\"cmd('DISARM')\\\">DESARMAR</button>\n <button class=\\\"pan\\\" onclick=\\\"cmd('PANIC')\\\">PANICO</button>\n</div>\n<h2 style=\\\"font-size:1.1rem\\\">Historial de activaciones</h2>\n<table id=\\\"hist\\\"><thead><tr><th>#</th><th>Fecha</th><th>Tipo</th><th>Estado</th><th>Detalle</th></tr></thead><tbody></tbody></table>\n<script>\nasync function cmd(c){ await fetch('/alarma/comando?cmd='+c); refresh(); }\nasync function refresh(){\n try{\n  const e=await (await fetch('/alarma/estado')).json();\n  const est=(e.estado&&e.estado.estado)||'--';\n  const d=document.getElementById('estado'); d.textContent=est+' '+((e.estado&&e.estado.modo)||''); d.className='estado '+est;\n  document.getElementById('acel').textContent=(e.acel&&e.acel.magnitud!=null)?Number(e.acel.magnitud).toFixed(2):'-';\n  const h=await (await fetch('/alarma/historial')).json();\n  const tb=document.querySelector('#hist tbody'); tb.innerHTML='';\n  (h||[]).forEach(r=>{ const tr=document.createElement('tr');\n   tr.innerHTML='<td>'+r.id+'</td><td>'+(r.ts||'')+'</td><td>'+(r.tipo||'')+'</td><td>'+(r.estado||'')+'</td><td>'+(r.detalle||'')+'</td>'; tb.appendChild(tr);});\n }catch(err){console.error(err);}\n}\nsetInterval(refresh,2000); refresh();\n</script>\n</div></body></html>",
+    "output": "str",
+    "x": 400,
+    "y": 800,
+    "wires": [
+      [
+        "resp_panel"
+      ]
+    ]
+  },
+  {
+    "id": "resp_panel",
+    "type": "http response",
+    "z": "tab_alarma",
+    "name": "",
+    "statusCode": "200",
+    "headers": {
+      "Content-Type": "text/html; charset=utf-8"
+    },
+    "x": 640,
+    "y": 800,
+    "wires": []
+  }
+]
