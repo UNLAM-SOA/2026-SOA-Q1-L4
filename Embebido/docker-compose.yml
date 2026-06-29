@@ -1,0 +1,72 @@
+name: alarma_stack
+services:
+  influxdb3-core:
+    container_name: influxdb3-core
+    image: influxdb:3-core
+    user: "0:0"
+    ports:
+      - 8181:8181
+    command:
+      - influxdb3
+      - serve
+      - --node-id=node0
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
+      - --plugin-dir=/var/lib/influxdb3/plugins
+      - --without-auth
+    volumes:
+      - influxdb3_data:/var/lib/influxdb3/data
+      - influxdb3_plugins:/var/lib/influxdb3/plugins
+    networks:
+      - alarma_network
+
+  mosquitto:
+    container_name: mosquitto_broker
+    image: eclipse-mosquitto:latest
+    ports:
+      - 1883:1883
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./passwd:/mosquitto/config/passwd:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    networks:
+      - alarma_network
+
+  telegraf:
+    container_name: telegraf_agent
+    image: telegraf:latest
+    restart: always
+    depends_on:
+      - influxdb3-core
+      - mosquitto
+    environment:
+      - INFLUX_BUCKET=sensores_db
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    networks:
+      - alarma_network
+
+  nodered:
+    container_name: nodered
+    image: nodered/node-red
+    ports:
+      - 1880:1880
+    depends_on:
+      - influxdb3-core
+      - mosquitto
+    volumes:
+      - ~/.node-red:/data
+      - ./flows.json:/data/flows.json
+    networks:
+      - alarma_network
+
+volumes:
+  influxdb3_data:
+  influxdb3_plugins:
+  mosquitto_data:
+  mosquitto_log:
+
+networks:
+  alarma_network:
+    name: alarma_network
