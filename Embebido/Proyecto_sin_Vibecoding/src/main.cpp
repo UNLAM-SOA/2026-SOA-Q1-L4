@@ -5,7 +5,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <freertos/timers.h>
-//Include agregado para gestionar las melodias del buzzer.
 #include <melodies.h>
 
 #define SPEAKER_PIN             0
@@ -45,7 +44,6 @@ enum Evento {
 typedef bool (*EventDetector)();
 typedef void (*Accion)();
 
-// --- Variables globales compartidas ---
 Estado           estadoActual       = APAGADO;
 Evento           newEvent;
 short            lastIndexTypeSensor = 0;
@@ -57,11 +55,9 @@ static SemaphoreHandle_t        xBotonEventoPendienteMutex        = nullptr;
 static SemaphoreHandle_t        xTimeoutAdvertenciaPendienteMutex = nullptr;
 static volatile bool     botonEventoPendiente = false;
 static volatile bool     timeoutAdvertenciaPendiente = false;
-// Timeout de advertencia: timeout con FreeRTOS
 static TimerHandle_t     xTimerAdvertencia          = nullptr;
 TaskHandle_t             xTareaAdvertenciaHandle;
 
-/// Variable para gestionar las melodias.
 TaskHandle_t xAlarmaTask = nullptr;
 
 int                      contadorAdvertencias = 0;
@@ -97,7 +93,6 @@ static bool detectaBotonEvent() {
   return result;
 }
 
-// Movimiento: MPU6050 (acelerometro)
 static bool detectaMovimientoBrusco() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -128,7 +123,6 @@ static bool detectaMovimientoEvent() {
   return false;
 }
 
-// Touch: potenciómetro/sensor Hall
 static bool detectaTouchEvent() {
   int hallActual = analogRead(PIN_HALL);
   bool trampaHall = abs(hallActual - hallBaseline) > UMBRAL_TOUCH;
@@ -182,7 +176,6 @@ void callbackTemporizador(TimerHandle_t xTimer)
   xTaskNotifyGive(xTareaAdvertenciaHandle);
 }
 
-// Acciones
 static void guardaPosicion() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -206,11 +199,7 @@ static void advertirMovimiento() {
   estadoActual = ADVERTENCIA_MOVIMIENTO;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-//////////// Tarea para hacer que suene la melodia, una vez se active la alarma./////////
-/////////////////////////////////////////////////////////////////////////////////////////
 static void tareaReproducirMelodia(void* pvParameters) {
-  // Aca se puede elegir qué ringtone queremos que suene (ej: melodiaStarWars, melodiaNokia, melodiaMario, melodiaTetris)
   const int* melodiaActiva = melodiaTetris; 
   int numValores = sizeof(melodiaTetris) / sizeof(melodiaTetris[0]);
 
@@ -225,25 +214,20 @@ static void tareaReproducirMelodia(void* pvParameters) {
         tone(SPEAKER_PIN, nota);
       }
       
-      // Cedemos el procesador mientras suena la nota
       vTaskDelay(pdMS_TO_TICKS(duracion));
       noTone(SPEAKER_PIN);
       vTaskDelay(pdMS_TO_TICKS(50));
     }
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Pausa antes de repetir
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
 
-/////////////////////////////////////////////////////////////////////////////////
-/////////INICIO DE TAREAS ACTUALIZADAS PARA QUE SUENE LA MELODIA ESPECIFICA//////
-/////////////////////////////////////////////////////////////////////////////////
 static void alertar() {
   Serial.println("¡ALERTA! Movimiento Y contacto detectados");
   cancelarTimeoutAdvertencia();
   digitalWrite(LED_PIN, HIGH);
   
-  // En lugar del tone() fijo, levantamos la tarea de FreeRTOS
   if (xAlarmaTask == nullptr) {
     xTaskCreate(tareaReproducirMelodia, "MelodiaAlarma", TAM_PILA, nullptr, PRIORIDAD, &xAlarmaTask);
   }
@@ -251,15 +235,12 @@ static void alertar() {
   estadoActual = ALERTA;
 }
 
-// ... (tu función manejarMovDuranteAdvertencia queda igual) ...
-
 static void apagar() {
   Serial.println(">>> SISTEMA DESARMADO");
   contadorAdvertencias = 0;
   cancelarTimeoutAdvertencia();
   
   if (estadoActual == ALERTA) {
-    // Si estaba sonando la alarma, matamos la tarea y apagamos el parlante
     if (xAlarmaTask != nullptr) {
       vTaskDelete(xAlarmaTask);
       xAlarmaTask = nullptr;
@@ -270,9 +251,6 @@ static void apagar() {
   digitalWrite(LED_PIN, LOW);
   estadoActual = APAGADO;
 }
-/////////////////////////////////////////////////////////////////////////////////
-/////////FIN DE TAREAS ACTUALIZADAS PARA QUE SUENE LA MELODIA ESPECIFICA/////////
-/////////////////////////////////////////////////////////////////////////////////
 
 static void manejarMovDuranteAdvertencia() {
   if (!timerReiniciadoEnAdvertencia) {
@@ -319,8 +297,6 @@ static void errorTransicion() {
   Serial.println("Transicion invalida");
 }
 
-// Matriz de transición (FSM)
-// Eventos: APAGAR, PRENDER, MOV_DETECTADO, TOUCH_DETECTADO, TIMEOUT_ADVERTENCIA
 static const Accion MATRIZ_TRANSICION[TOTAL_ESTADOS][TOTAL_EVENTOS] = {
   { errorTransicion, prender,          errorTransicion,    errorTransicion,     errorTransicion      }, // APAGADO
   { apagar,          errorTransicion,  advertirMovimiento, alertar,             errorTransicion      }, // ACTIVO
@@ -328,7 +304,6 @@ static const Accion MATRIZ_TRANSICION[TOTAL_ESTADOS][TOTAL_EVENTOS] = {
   { apagar,          errorTransicion,  errorTransicion,    errorTransicion,     errorTransicion      }  // ALERTA
 };
 
-// Tabla de detectores
 EventDetector eventType[MAX_TYPE_EVENTS] = {
   detectaBotonEvent,
   detectaMovimientoEvent,
@@ -336,7 +311,6 @@ EventDetector eventType[MAX_TYPE_EVENTS] = {
   detectaTimeoutAdvertencia
 };
 
-// Inicializar tareas de freertos
 void initEventDetectors() {
   xBotonSemaphore                   = xSemaphoreCreateBinary();
   xBotonEventoPendienteMutex         = xSemaphoreCreateMutex();
@@ -351,7 +325,6 @@ void initEventDetectors() {
   attachInterrupt(digitalPinToInterrupt(PIN_BUTTON), isrBoton, FALLING);
 }
 
-// Inicializar sensores y actuadores
 void initHardware() {
   Wire.begin(ACCELEROMETER_SDA, ACCELEROMETER_SCL);
   if (!mpu.begin()) {
