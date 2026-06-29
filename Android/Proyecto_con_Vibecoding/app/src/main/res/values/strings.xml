@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Alarma Antirrobos</string>
+    <string name="titulo_sensor">Sensor del telefono</string>
+
+    <string name="hint_ip">IP del broker (ej. 192.168.0.10)</string>
+    <string name="btn_conectar">Conectar</string>
+    <string name="desconectado">Desconectado</string>
+    <string name="label_estado">Estado del dispositivo:</string>
+    <string name="guion">—</string>
+    <string name="btn_armar">ARMAR</string>
+    <string name="btn_desarmar">DESARMAR</string>
+    <string name="btn_ir_sensor">Abrir sensor del telefono</string>
+
+    <string name="acel_inicial">Aceleracion: — m/s²</string>
+    <string name="fmt_acel">Aceleracion: %1$.2f m/s²</string>
+
+    <string name="instruccion_shake">Sacude el telefono para disparar la alarma (PANIC) en el ESP32 y hacer vibrar el telefono.</string>
+    <string name="xyz_inicial">x=0.00  y=0.00  z=0.00</string>
+    <string name="fmt_xyz">x=%1$.2f  y=%2$.2f  z=%3$.2f</string>
+    <string name="sacudidas_inicial">Sacudidas detectadas: 0</string>
+    <string name="fmt_sacudidas">Sacudidas detectadas: %1$d</string>
+    <string name="shake_accion">Sacudida! PANIC enviado + vibracion</string>
+</resources>
