@@ -5,7 +5,6 @@
 #include <FSM.h>
 #include <Conectividad.h>
 
-// ── Definiciones de variables globales compartidas ────────────────────────
 Estado           estadoActual        = APAGADO;
 Evento           newEvent;
 short            lastIndexTypeSensor = 0;

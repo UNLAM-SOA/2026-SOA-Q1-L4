@@ -3,7 +3,6 @@
 #include <Sensores.h>
 #include <Conectividad.h>
 
-// ── Acciones de la FSM ────────────────────────────────────────────────────
 static void guardaPosicion() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -107,8 +106,6 @@ static void errorTransicion() {
   Serial.println("Transicion invalida");
 }
 
-// ── Matriz de transición ──────────────────────────────────────────────────
-// Eventos: APAGAR, PRENDER, MOV_DETECTADO, TOUCH_DETECTADO, TIMEOUT_ADVERTENCIA
 static const Accion MATRIZ_TRANSICION[TOTAL_ESTADOS][TOTAL_EVENTOS] = {
   { errorTransicion, prender,                       errorTransicion,              errorTransicion, errorTransicion      }, // APAGADO
   { apagar,          errorTransicion,               advertirMovimiento,           alertar,         errorTransicion      }, // ACTIVO
@@ -116,7 +113,6 @@ static const Accion MATRIZ_TRANSICION[TOTAL_ESTADOS][TOTAL_EVENTOS] = {
   { apagar,          errorTransicion,               errorTransicion,              errorTransicion, errorTransicion      }  // ALERTA
 };
 
-// ── Núcleo FSM ────────────────────────────────────────────────────────────
 extern EventDetector eventType[MAX_TYPE_EVENTS];
 
 static bool getNuevoEvento() {

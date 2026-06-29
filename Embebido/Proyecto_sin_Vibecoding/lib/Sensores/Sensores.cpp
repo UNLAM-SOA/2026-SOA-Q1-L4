@@ -1,11 +1,9 @@
 #include "Sensores.h"
 
-// ── ISR ───────────────────────────────────────────────────────────────────
 static void isrBoton() {
   xSemaphoreGiveFromISR(xBotonSemaphore, nullptr);
 }
 
-// ── Tareas FreeRTOS ───────────────────────────────────────────────────────
 static void tareaBoton(void* pvParameters) {
   while (1) {
     xSemaphoreTake(xBotonSemaphore, portMAX_DELAY);
@@ -29,12 +27,10 @@ void setearTimeoutAdvertencia(void* parameter) {
   }
 }
 
-// ── Callback del timer ────────────────────────────────────────────────────
 void callbackTemporizador(TimerHandle_t xTimer) {
   xTaskNotifyGive(xTareaAdvertenciaHandle);
 }
 
-// ── Timeout helpers ───────────────────────────────────────────────────────
 void iniciarTimeoutAdvertencia() {
   xTimerReset(xTimerAdvertencia, 0);
 }
@@ -47,7 +43,6 @@ void cancelarTimeoutAdvertencia() {
   }
 }
 
-// ── Detección de eventos ──────────────────────────────────────────────────
 static bool detectaBotonEvent() {
   bool result = false;
   if (xSemaphoreTake(xBotonEventoPendienteMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
@@ -140,7 +135,6 @@ EventDetector eventType[MAX_TYPE_EVENTS] = {
   detectaMqttComandoEvent
 };
 
-// ── Init ──────────────────────────────────────────────────────────────────
 void initHardware() {
   Wire.begin(ACCELEROMETER_SDA, ACCELEROMETER_SCL);
   if (!mpu.begin()) {

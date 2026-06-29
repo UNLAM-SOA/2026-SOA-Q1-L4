@@ -4,7 +4,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-static const char* WIFI_SSID = "aero";  // 2.4GHz — ESP32-C3 no soporta 5GHz
+static const char* WIFI_SSID = "aero"; 
 static const char* WIFI_PASS = "12345678";
 
 static WiFiClient   espClient;
