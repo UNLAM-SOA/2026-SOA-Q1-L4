@@ -1,0 +1,13 @@
+# wokwi.toml - configuracion del simulador Wokwi para VS Code
+#
+# Apunta a los binarios que genera PlatformIO al compilar el entorno esp32-c3.
+# El "Wokwi Private IoT Gateway" (incluido en la extension de VS Code) conecta
+# el WiFi simulado del ESP32 con la red del host, por eso desde el firmware el
+# broker MQTT del host se alcanza con el nombre "host.wokwi.internal" (ver config.h).
+#
+# Pasos: 1) PlatformIO: Build (genera firmware.bin/.elf)  2) F1 -> "Wokwi: Start Simulator".
+
+[wokwi]
+version = 1
+firmware = ".pio/build/esp32-c3/firmware.bin"
+elf = ".pio/build/esp32-c3/firmware.elf"
