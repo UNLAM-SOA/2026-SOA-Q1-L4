@@ -72,7 +72,7 @@ fun PantallaAjuste(navController: NavController? = null) {
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(onClick = { navController?.navigate("notif") }) {
-                Text("Ver historial de alertas")
+                Text("Ver historial del acelerometro")
             }
 
             Spacer(modifier = Modifier.height(8.dp))

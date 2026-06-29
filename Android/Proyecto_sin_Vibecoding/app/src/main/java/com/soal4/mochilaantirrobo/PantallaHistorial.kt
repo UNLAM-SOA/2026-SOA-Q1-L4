@@ -33,7 +33,7 @@ fun PantallaHistorial(navController: NavController? = null) {
                 .fillMaxSize()
         ) {
             Text(
-                text = "Registro de Notificaciones",
+                text = "Registro del acelerometro",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(16.dp)
             )
