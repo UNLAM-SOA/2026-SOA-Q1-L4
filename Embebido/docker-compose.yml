@@ -13,6 +13,7 @@ services:
       - --object-store=file
       - --data-dir=/var/lib/influxdb3/data
       - --plugin-dir=/var/lib/influxdb3/plugins
+      - --without-auth
     volumes:
       - influxdb3_data:/var/lib/influxdb3/data
       - influxdb3_plugins:/var/lib/influxdb3/plugins
@@ -40,10 +41,23 @@ services:
       - influxdb3-core
       - mosquitto
     environment:
-      - INFLUX_TOKEN=apiv3_jYKWp1wf1MS-hNTrRvYPYee1L7c6c4uxlNFP4lR2LXQ9BehvibQuicHgrfGkkFN2tjHJxQHf6SdsaJQipjfFKw
       - INFLUX_BUCKET=sensores_db
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    networks:
+      - alarma_network
+
+  nodered:
+    container_name: nodered
+    image: nodered/node-red
+    ports:
+      - 1880:1880
+    depends_on:
+      - influxdb3-core
+      - mosquitto
+    volumes:
+      - ~/.node-red:/data
+      - ./flows.json:/data/flows.json
     networks:
       - alarma_network
 
