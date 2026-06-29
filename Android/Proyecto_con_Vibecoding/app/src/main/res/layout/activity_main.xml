@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:paddingBottom="12dp" />
+
+        <!-- CAMPO DE TEXTO requerido por la consigna: IP del broker MQTT -->
+        <EditText
+            android:id="@+id/inputIp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_ip"
+            android:inputType="text"
+            android:autofillHints="false" />
+
+        <!-- BOTON requerido por la consigna: conectar al broker -->
+        <Button
+            android:id="@+id/btnConectar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_conectar" />
+
+        <TextView
+            android:id="@+id/txtConexion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/desconectado"
+            android:paddingTop="6dp"
+            android:paddingBottom="16dp"
+            android:textColor="#64748B" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_estado" />
+
+        <!-- Valor del SENSOR/estado que llega DESDE el embebido por WiFi -->
+        <TextView
+            android:id="@+id/txtEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/guion"
+            android:gravity="center"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:background="#E2E8F0" />
+
+        <TextView
+            android:id="@+id/txtAcel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/acel_inicial"
+            android:gravity="center"
+            android:paddingTop="8dp"
+            android:paddingBottom="20dp"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnArmar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_armar" />
+
+            <Button
+                android:id="@+id/btnDesarmar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_desarmar" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSensor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/btn_ir_sensor" />
+
+    </LinearLayout>
+</ScrollView>
