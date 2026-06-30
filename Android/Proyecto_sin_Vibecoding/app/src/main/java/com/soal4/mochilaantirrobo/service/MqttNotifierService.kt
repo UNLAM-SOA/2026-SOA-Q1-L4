@@ -17,17 +17,18 @@ object MqttNotifierService {
     private lateinit var mqttClient: MqttClient
 
     // TODO Actualizar
-    private const val BROKER_URL = "tcp://192.168.0.250:1883"
+    private const val BROKER_URL = "tcp://0.tcp.sa.ngrok.io:11884"
     private const val CLIENT_ID = "MochilaAndroidClient"
 
     private const val TOPIC_SHAKE = "alarm/arm_dsrm"
     private const val TOPIC_SENSIBILIDAD = "alarm/acelerometer_sens"
 
-    private const val TOPIC_RINGTONE = "alarm/ringtone_id"
+    private const val TOPIC_RINGTONE = "alarm/melody"
     private const val TOPIC_ALERTAS = "alarm/state"
 
 
     val mensajeEntrante = MutableStateFlow<String?>(null)
+    val estadoAlarma = MutableStateFlow(false)
 
     fun conectar() {
 
@@ -64,9 +65,8 @@ object MqttNotifierService {
             }
 
             try {
-
                 mqttClient.publish(topic, message)
-
+                estadoAlarma.value = !estadoAlarma.value
             } catch (e: MqttException) {
                 Log.e("MQTT", "Error notificando shake por MQTT")
                 e.printStackTrace()
@@ -99,13 +99,11 @@ object MqttNotifierService {
                 )
             }
         }
-    suspend fun enviarRingtone(idMelodia: Int): String =
+    suspend fun enviarRingtone(nombreMelodia: String): String =
         suspendCoroutine { continuation ->
 
             val topic = TOPIC_RINGTONE
-            val payload = idMelodia.toString() // Convierte el 1, 2, 3 o 4 a Texto
-
-            val message = MqttMessage(payload.toByteArray()).apply {
+            val message = MqttMessage(nombreMelodia.toByteArray()).apply {
                 qos = 1
             }
 
@@ -113,7 +111,7 @@ object MqttNotifierService {
                 mqttClient.publish(topic, message)
 
                 continuation.resume(
-                    "MQTT: Melodía $idMelodia sincronizada con éxito"
+                    "MQTT: Melodía \"$nombreMelodia\" sincronizada con éxito"
                 )
             } catch (e: MqttException) {
                 continuation.resume(

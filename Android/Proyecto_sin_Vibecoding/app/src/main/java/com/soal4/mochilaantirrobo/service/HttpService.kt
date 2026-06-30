@@ -11,13 +11,21 @@ data class AlertaAcel(
     val z: Double
 )
 
+data class Estado(
+    val estado: String
+)
+
+
 interface NotificacionesApi {
     @GET("accel")
     suspend fun getNotificaciones(): List<AlertaAcel>
+
+    @GET("state")
+    suspend fun getEstado(): List<Estado>
 }
 
 object HttpService {
-    private const val BASE_URL = "http://192.168.0.250:1880/" // TODO: actualizar URL
+    private const val BASE_URL = "https://meg-extrapolative-susana.ngrok-free.dev/" // TODO: actualizar URL
 
     val api: NotificacionesApi by lazy {
         Retrofit.Builder()

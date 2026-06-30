@@ -6,9 +6,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.soal4.mochilaantirrobo.service.HttpService
 import com.soal4.mochilaantirrobo.service.MqttNotifierService
 import kotlinx.coroutines.launch
 
@@ -17,11 +21,23 @@ import kotlinx.coroutines.launch
 fun PantallaAjuste(navController: NavController? = null) {
 
     var valorSlider by rememberSaveable { mutableFloatStateOf(0f) }
-    var isChecked by rememberSaveable { mutableStateOf(false) }
+    val isActivo by MqttNotifierService.estadoAlarma.collectAsState()
+    var estadoCargado by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
-
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        try {
+            val resultado = HttpService.api.getEstado()
+            val estado = resultado.firstOrNull()?.estado ?: "APAGADO"
+            MqttNotifierService.estadoAlarma.value = estado == "ACTIVO"
+        } catch (e: Exception) {
+            // mantiene el valor actual del flow
+        } finally {
+            estadoCargado = true
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
@@ -33,16 +49,22 @@ fun PantallaAjuste(navController: NavController? = null) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            Text(
+                text = if (!estadoCargado) "Cargando..." else if (isActivo) "ACTIVO" else "APAGADO",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isActivo) Color(0xFF4CAF50) else Color(0xFFF44336)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text("Prender o apagar la alarma")
 
             Switch(
-
-                checked = isChecked, onCheckedChange = {
-                    isChecked = it
+                checked = isActivo,
+                onCheckedChange = {
                     scope.launch {
-                        println("Enviando prendido/apagado via MQTT")
-                        val respuesta = MqttNotifierService.enviarArmDsrm()
-                        println("Respuesta: $respuesta")
+                        MqttNotifierService.enviarArmDsrm()
                     }
                 })
 
@@ -52,7 +74,7 @@ fun PantallaAjuste(navController: NavController? = null) {
             )
 
             Slider(
-                enabled = isChecked,
+                enabled = isActivo,
                 value = valorSlider,
                 onValueChange = { valorSlider = it },
                 valueRange = 0f..100f,

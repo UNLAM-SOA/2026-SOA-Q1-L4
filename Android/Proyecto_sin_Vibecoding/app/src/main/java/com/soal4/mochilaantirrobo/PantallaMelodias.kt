@@ -16,13 +16,13 @@ import kotlinx.coroutines.launch
 fun PantallaMelodias(navController: NavController? = null) {
     val listaMelodias = remember {
         listOf(
-            Pair("1", "Star Wars - Marcha Imperial"),
-            Pair("2", "Nokia Clásico"),
-            Pair("3", "Super Mario Bros (1-Up)"),
-            Pair("4", "Tetris Theme")
+            "STARWARS",
+            "NOKIA",
+            "MARIO",
+            "TETRIS"
         )
     }
-    var idSeleccionado by remember { mutableStateOf("1") }
+    var nombreSeleccionado by remember { mutableStateOf(listaMelodias.first()) }
     val scope = rememberCoroutineScope()
 
     Scaffold { padding ->
@@ -49,9 +49,9 @@ fun PantallaMelodias(navController: NavController? = null) {
                             .padding(8.dp)
                     ) {
                         RadioButton(
-                            selected = (idSeleccionado == melodia.first),
-                            onClick = { idSeleccionado = melodia.first })
-                        Text(text = melodia.second, modifier = Modifier.padding(start = 8.dp))
+                            selected = (nombreSeleccionado == melodia),
+                            onClick = { nombreSeleccionado = melodia })
+                        Text(text = melodia, modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
@@ -59,10 +59,7 @@ fun PantallaMelodias(navController: NavController? = null) {
             Button(
                 onClick = {
                     scope.launch {
-                        println("Enviando melodía ID $idSeleccionado via MQTT")
-
-                        val respuesta = MqttNotifierService.enviarRingtone(idSeleccionado.toInt())
-
+                        val respuesta = MqttNotifierService.enviarRingtone(nombreSeleccionado)
                         println("Respuesta ringtone: $respuesta")
                     }
                     navController?.popBackStack()
