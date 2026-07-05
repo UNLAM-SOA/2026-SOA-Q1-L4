@@ -7,11 +7,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.soal4.mochilaantirrobo.service.AuthService
 import com.soal4.mochilaantirrobo.service.HttpService
 import com.soal4.mochilaantirrobo.service.MqttNotifierService
 import kotlinx.coroutines.launch
@@ -26,6 +28,7 @@ fun PantallaAjuste(navController: NavController? = null) {
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         try {
@@ -100,6 +103,18 @@ fun PantallaAjuste(navController: NavController? = null) {
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(onClick = { navController?.navigate("melodias") }) {
                 Text("Configurar Melodías de Alarma")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            TextButton(onClick = {
+                scope.launch {
+                    AuthService.cerrarSesion(context)
+                    navController?.navigate("login") {
+                        popUpTo("ajuste") { inclusive = true }
+                    }
+                }
+            }) {
+                Text("Cerrar sesión")
             }
         }
     }

@@ -37,8 +37,8 @@
 #define BITS_READ_RESOLUTION    12
 
 // ── MQTT ──────────────────────────────────────────────────────────────────
-#define MQTT_BROKER             "0.tcp.sa.ngrok.io"
-#define MQTT_PORT               29379
+#define MQTT_BROKER             "alarma-app.duckdns.org"
+#define MQTT_PORT               8883
 #define MQTT_USER               "claromio"
 #define MQTT_PASS               "RiverBest"
 #define MQTT_CLIENT_ID          "ESP32AlarmClient"

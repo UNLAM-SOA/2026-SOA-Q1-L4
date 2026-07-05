@@ -1,4 +1,4 @@
-name: alarma_stack
+version: '3.3'
 services:
   influxdb3-core:
     container_name: influxdb3-core
@@ -25,11 +25,13 @@ services:
     image: eclipse-mosquitto:latest
     ports:
       - 1883:1883
+      - 8883:8883
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./passwd:/mosquitto/config/passwd:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
+      - ./npm_letsencrypt:/etc/letsencrypt:ro
     networks:
       - alarma_network
 
@@ -56,8 +58,20 @@ services:
       - influxdb3-core
       - mosquitto
     volumes:
-      - ~/.node-red:/data
-      - ./flows.json:/data/flows.json
+      - ./nodered_data:/data
+    networks:
+      - alarma_network
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx_proxy
+    restart: always
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - ./npm_data:/data
+      - ./npm_letsencrypt:/etc/letsencrypt
     networks:
       - alarma_network
 

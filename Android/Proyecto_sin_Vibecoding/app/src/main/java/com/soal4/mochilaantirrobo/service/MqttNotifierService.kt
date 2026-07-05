@@ -17,7 +17,7 @@ object MqttNotifierService {
     private lateinit var mqttClient: MqttClient
 
     // TODO Actualizar
-    private const val BROKER_URL = "tcp://0.tcp.sa.ngrok.io:11884"
+    private const val BROKER_URL = "ssl://alarma-app.duckdns.org:8883"
     private const val CLIENT_ID = "MochilaAndroidClient"
 
     private const val TOPIC_SHAKE = "alarm/arm_dsrm"
