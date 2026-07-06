@@ -76,6 +76,7 @@ fun AppNavigation() {
 
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") { PantallaSplash(navController) }
+        composable("login") { PantallaLogin(navController = navController) }
         composable("ajuste") { PantallaAjuste(navController = navController) }
         composable("notif") { PantallaHistorial(navController = navController) }
         composable("melodias") { PantallaMelodias(navController = navController) }

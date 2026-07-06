@@ -3,11 +3,12 @@
 #include <Preferences.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <WiFiClientSecure.h>
 
 static const char* WIFI_SSID = "aero"; 
 static const char* WIFI_PASS = "12345678";
 
-static WiFiClient   espClient;
+static WiFiClientSecure   espClient;
 static PubSubClient client(espClient);
 
 static void mqttCallback(char* topic, byte* payload, unsigned int length) {
@@ -137,9 +138,10 @@ void initConectividad() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
+  espClient.setInsecure();
 
   client.setServer(MQTT_BROKER, MQTT_PORT);
   client.setCallback(mqttCallback);
 
-  xTaskCreate(tareaConectividad, "tareaConectividad", 4096, nullptr, PRIORIDAD, nullptr);
+  xTaskCreate(tareaConectividad, "tareaConectividad", 8192, nullptr, PRIORIDAD, nullptr);
 }

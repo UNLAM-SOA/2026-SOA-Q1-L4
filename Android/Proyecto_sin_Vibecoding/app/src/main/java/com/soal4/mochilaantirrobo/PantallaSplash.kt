@@ -12,12 +12,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.soal4.mochilaantirrobo.service.AuthService
 
 @Composable
 fun PantallaSplash(navController: NavController) {
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(2000)
-        navController.navigate("ajuste") {
+        val destino = if (AuthService.usuarioActual() != null) "ajuste" else "login"
+        navController.navigate(destino) {
             popUpTo("splash") { inclusive = true }
         }
     }

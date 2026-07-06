@@ -25,7 +25,7 @@ interface NotificacionesApi {
 }
 
 object HttpService {
-    private const val BASE_URL = "https://meg-extrapolative-susana.ngrok-free.dev/" // TODO: actualizar URL
+    private const val BASE_URL = "https://alarma-app.duckdns.org"
 
     val api: NotificacionesApi by lazy {
         Retrofit.Builder()
